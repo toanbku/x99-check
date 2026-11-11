@@ -291,6 +291,7 @@ if [ "$HAVE_DMI" = 1 ]; then
   uk=$(printf '%s' "$kinds" | sort -u | tr '\n' ' ')
   if grep -qx RDIMM <<<"$kinds" && grep -qx LRDIMM <<<"$kinds"; then bad "Tron RDIMM voi LRDIMM -> khong chay chung duoc"
   elif grep -q UDIMM <<<"$kinds"; then warn "Co thanh UDIMM (khong phai ECC REG nhu nguoi ban noi)"
+  elif grep -qx '?' <<<"$kinds"; then info "Loai RAM: khong doc duoc het, xem tem (-R = RDIMM, -L = LRDIMM). Doc duoc: $uk"
   else ok "Loai: $uk"; fi
   nb=$(printf '%s' "$brands" | grep -vc "$EXPECT_BRAND" || true)
   if [ "$nb" -eq 0 ]; then ok "Hang: $EXPECT_BRAND"; else warn "Co $nb thanh khong phai $EXPECT_BRAND: $(printf '%s' "$brands" | grep -v "$EXPECT_BRAND" | sort -u | tr '\n' ' ')"; fi
