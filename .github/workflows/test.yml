@@ -1,0 +1,56 @@
+name: test
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Quick run (must not crash)
+        shell: powershell
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File windows\check.ps1 -Quick
+          $code = $LASTEXITCODE
+          Write-Host "exit code: $code"
+          if ($code -ge 2) { throw "script crashed ($code)" }
+          exit 0
+      - name: Injected errors are detected
+        shell: powershell
+        run: |
+          $out = powershell -NoProfile -ExecutionPolicy Bypass -File windows\check.ps1 -Quick -InjectErrors 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $out
+          if ($code -ne 1) { throw "expected exit 1, got $code" }
+          if ($out -notmatch 'RAM SAI DU LIEU') { throw 'memory error not detected' }
+          if ($out -notmatch 'CPU TINH SAI') { throw 'cpu error not detected' }
+          exit 0
+
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y -qq stress-ng dmidecode
+      - name: Quick run with stress-ng
+        run: |
+          set +e
+          sudo bash linux/check.sh --quick
+          code=$?
+          echo "exit code: $code"
+          [ "$code" -lt 2 ]
+      - name: Python fallback detects injected errors
+        run: |
+          set +e
+          out=$(sudo env NO_STRESSNG=1 INJECT=1 bash linux/check.sh --quick 2>&1)
+          code=$?
+          echo "$out"
+          [ "$code" -eq 1 ] && grep -q 'RAM SAI DU LIEU' <<<"$out" && grep -q 'CPU TINH SAI' <<<"$out"
+      - name: RAM label parsing (fake dmidecode)
+        run: |
+          set +e
+          out=$(sudo env PATH="$PWD/tests/fakebin:$PATH" bash linux/check.sh --skip-tests 2>&1)
+          echo "$out"
+          grep -q 'Tong 128GB' <<<"$out" && grep -q 'Tron RDIMM voi LRDIMM' <<<"$out" && grep -q 'HUANANZHI X99-F8D' <<<"$out"

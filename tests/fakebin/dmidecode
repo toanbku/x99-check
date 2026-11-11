@@ -1,0 +1,16 @@
+#!/bin/bash
+case "$*" in
+  "-s baseboard-manufacturer") echo "HUANANZHI";;
+  "-s baseboard-product-name") echo "X99-F8D PLUS";;
+  "-s bios-version") echo "5.11";;
+  "-s bios-release-date") echo "06/01/2023";;
+  "-t 17")
+  dev() { printf 'Handle 0x00%s, DMI type 17, 40 bytes\nMemory Device\n\tTotal Width: 72 bits\n\tSize: %s\n\tForm Factor: DIMM\n\tLocator: %s\n\tBank Locator: %s\n\tType: DDR4\n\tType Detail: Synchronous %s\n\tSpeed: 2133 MT/s\n\tManufacturer: %s\n\tPart Number: %s    \n\tRank: 2\n\tConfigured Memory Speed: 2133 MT/s\n\n' "$@"; }
+  echo "# dmidecode 3.5"; echo
+  dev 30 "32 GB" DIMM_A1 "NODE 0" "Registered (Buffered)" Samsung M393A4K40BB0-CPB
+  dev 31 "No Module Installed" DIMM_A2 "NODE 0" Unknown "NO DIMM" "NO DIMM"
+  dev 32 "32768 MB" DIMM_B1 "NODE 0" "Registered (Buffered)" Samsung M393A4K40BB0-CPB
+  dev 33 "32 GB" DIMM_E1 "NODE 1" "Registered (Buffered)" "00CE00B300CE" M393A4K40BB0-CPB
+  dev 34 "32 GB" DIMM_F1 "NODE 1" "LRDIMM" "SK Hynix" HMA84GL7AMR4N-TF
+  ;;
+esac
