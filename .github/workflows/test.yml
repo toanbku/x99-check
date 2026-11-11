@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get install -y -qq stress-ng dmidecode
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq stress-ng dmidecode
       - name: Quick run with stress-ng
         run: |
           set +e
