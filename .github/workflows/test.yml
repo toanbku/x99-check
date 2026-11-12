@@ -28,6 +28,30 @@ jobs:
           if ($out -notmatch 'CPU TINH SAI') { throw 'cpu error not detected' }
           exit 0
 
+  windows-disk:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Disk check quick run (must not crash)
+        shell: powershell
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File windows\disk-check.ps1 -Quick
+          $code = $LASTEXITCODE
+          Write-Host "exit code: $code"
+          if ($code -ge 2) { throw "script crashed ($code)" }
+          if (Test-Path C:\x99-disktest.tmp, D:\x99-disktest.tmp) { if ((Test-Path C:\x99-disktest.tmp) -or (Test-Path D:\x99-disktest.tmp)) { throw 'temp file left behind' } }
+          exit 0
+      - name: Disk check detects corrupted data
+        shell: powershell
+        run: |
+          $out = powershell -NoProfile -ExecutionPolicy Bypass -File windows\disk-check.ps1 -Quick -InjectErrors 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $out
+          if ($code -ne 1) { throw "expected exit 1, got $code" }
+          if ($out -notmatch 'SAI DU LIEU') { throw 'corruption not detected' }
+          exit 0
+
   linux:
     runs-on: ubuntu-latest
     timeout-minutes: 20
