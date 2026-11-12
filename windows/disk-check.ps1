@@ -38,6 +38,24 @@ trap {
 
 if ($Quick) { $ReadSamples = 60; $WriteTestGB = 1 }
 
+# Tat QuickEdit cua cua so console: lo bam chuot vao cua so la Windows dung script lai
+# (tieu de hien "Select ...") cho den khi bam Esc -> trong nhu bi treo.
+try {
+    if (-not ('X99.Con' -as [type])) {
+        Add-Type -Namespace X99 -Name Con -MemberDefinition @'
+[DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int h);
+[DllImport("kernel32.dll")] public static extern bool GetConsoleMode(IntPtr h, out uint m);
+[DllImport("kernel32.dll")] public static extern bool SetConsoleMode(IntPtr h, uint m);
+'@
+    }
+    $conIn = [X99.Con]::GetStdHandle(-10)
+    $conMode = [uint32]0
+    if ([X99.Con]::GetConsoleMode($conIn, [ref]$conMode)) {
+        [void][X99.Con]::SetConsoleMode($conIn, [uint32](([int64]$conMode -band 4294967231) -bor 128))
+    }
+}
+catch {}
+
 # C# 5 (Add-Type cua Windows PowerShell 5.1). Doc/ghi khong qua cache cua Windows (NO_BUFFERING)
 # de do dung toc do that va doc dung du lieu nam tren o.
 $cs = @'

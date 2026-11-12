@@ -44,6 +44,24 @@ trap {
 
 if ($Quick) { $StressMinutes = 1; $MemPasses = 1 }
 
+# Tat QuickEdit cua cua so console: lo bam chuot vao cua so la Windows dung script lai
+# (tieu de hien "Select ...") cho den khi bam Esc -> trong nhu bi treo.
+try {
+    if (-not ('X99.Con' -as [type])) {
+        Add-Type -Namespace X99 -Name Con -MemberDefinition @'
+[DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int h);
+[DllImport("kernel32.dll")] public static extern bool GetConsoleMode(IntPtr h, out uint m);
+[DllImport("kernel32.dll")] public static extern bool SetConsoleMode(IntPtr h, uint m);
+'@
+    }
+    $conIn = [X99.Con]::GetStdHandle(-10)
+    $conMode = [uint32]0
+    if ([X99.Con]::GetConsoleMode($conIn, [ref]$conMode)) {
+        [void][X99.Con]::SetConsoleMode($conIn, [uint32](([int64]$conMode -band 4294967231) -bor 128))
+    }
+}
+catch {}
+
 # ---------------------------------------------------------------------------
 # Phan C#: ghim thread vao tung CPU (Windows chia >64 luong thanh nhieu "processor group",
 # khong ghim thi chi chay duoc 1 con CPU), test RAM va chay nang CPU.
@@ -583,19 +601,21 @@ else {
         $phaseVi = @{ 'alloc' = 'cap phat'; 'write' = 'ghi'; 'verify' = 'doc lai' }
         $sw = [Diagnostics.Stopwatch]::StartNew()
         $last = ''
+        $lastPrint = 0
         while (-not [X99Mem]::Done) {
             Start-Sleep -Milliseconds 500
             $pa = [X99Mem]::Pass
             $pt = [X99Mem]::Pattern
             $ph = [X99Mem]::Phase
             $st = '{0}|{1}|{2}' -f $pa, $pt, $ph
-            if ($st -ne $last) {
+            if (($st -ne $last) -or ($sw.Elapsed.TotalSeconds - $lastPrint -ge 20)) {
                 $last = $st
+                $lastPrint = $sw.Elapsed.TotalSeconds
                 if ($pa -gt 0) {
                     Write-Info ('{0,5:N0}s  pass {1}/{2}  mau {3,-12} {4,-8} da cap phat {5}GB  loi: {6}' -f $sw.Elapsed.TotalSeconds,
                         $pa, $MemPasses, $names[$pt], $phaseVi[$ph], [math]::Round([X99Mem]::BytesAllocated / 1GB), [X99Mem]::Errors)
                 }
-                else { Write-Info 'dang cap phat RAM...' }
+                else { Write-Info ('{0,5:N0}s  dang cap phat RAM... {1}GB' -f $sw.Elapsed.TotalSeconds, [math]::Round([X99Mem]::BytesAllocated / 1GB)) }
             }
         }
         $allocGB = [math]::Round([X99Mem]::BytesAllocated / 1GB)
