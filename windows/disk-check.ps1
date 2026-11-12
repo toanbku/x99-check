@@ -537,7 +537,7 @@ foreach ($pd in $pds) {
         if ($FullRead) { Write-Info ('Doc het {0}GB (chi doc). HDD ~100-200MB/s -> mat khoang {1:N0} phut.' -f $sizeGB, ($sizeGB * 1024 / 150 / 60)) }
         else { Write-Info ('Doc thu (chi doc): 256MB o dau/giua/cuoi + {0} cho rai khap o.' -f $ReadSamples) }
         [X99Disk]::StartScan($n, [long]$pd.Size, $ReadSamples, [bool]$FullRead)
-        Wait-Job2 '  doc'
+        Wait-Job2 ''
         if ([X99Disk]::Fatal) { Write-Warn ('Khong doc thu duoc: ' + [X99Disk]::Fatal) }
         else {
             if ($FullRead) { Write-Info ('Toc do doc trung binh: {0:N0} MB/s' -f [X99Disk]::SeqStart) }
@@ -581,7 +581,7 @@ foreach ($pd in $pds) {
             Write-Info ('Ghi {0}GB vao {1} roi doc lai so tung byte (file tu xoa).' -f $WriteTestGB, $path)
             [X99Disk]::Inject = [bool]$InjectErrors
             [X99Disk]::StartWrite($path, [long]$WriteTestGB * 1GB)
-            Wait-Job2 '  ghi'
+            Wait-Job2 ''
             if ([X99Disk]::Fatal) { Write-Warn ('Khong test ghi duoc: ' + [X99Disk]::Fatal) }
             else {
                 Write-Info ('Toc do ghi {0:N0} MB/s | doc lai {1:N0} MB/s' -f [X99Disk]::WriteMBps, [X99Disk]::ReadMBps)

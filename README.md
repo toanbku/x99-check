@@ -77,6 +77,38 @@ Mỗi dòng có nhãn `[OK]`, `[CHU Y]` (chú ý) hoặc `[LOI]` (lỗi). Cuối
 | `[CHU Y] Co thanh khong phai Samsung` | Khác lời người bán | Bớt giá nhẹ |
 | `[CHU Y] Windows tung ghi ... WHEA / man hinh xanh` | Trước đây máy từng lỗi | Hỏi người bán lý do |
 
+## 4b. Kiểm tra ổ cứng (script riêng, ~1–2 phút mỗi ổ)
+
+Script này chạy riêng, không liên quan script ở mục 3. Dán vào PowerShell:
+
+```powershell
+[Net.ServicePointManager]::SecurityProtocol='Tls12'; iwr -useb https://github.com/toanbku/x99-check/archive/refs/heads/main.zip -OutFile $env:TEMP\x99.zip; Expand-Archive $env:TEMP\x99.zip $env:TEMP -Force; Start-Process "$env:TEMP\x99-check-main\windows\disk.bat"
+```
+
+Đã tải ZIP rồi thì bấm đúp `windows\disk.bat` là xong.
+
+Script **chỉ đọc** ổ, cộng thêm ghi **1 file tạm** (2GB) vào chỗ còn trống rồi tự xoá. Dữ liệu có sẵn trên ổ không bị đụng tới. Với mỗi ổ, script làm mấy việc sau:
+
+1. Đọc tên, serial, loại ổ (HDD / SSD / NVMe), xem Windows đánh giá ổ ra sao.
+2. Đọc **SMART** (bộ thông số sức khoẻ ổ tự ghi lại): số giờ đã chạy, số lần bật, sector hỏng hoặc đang chờ xử lý, **% tuổi thọ còn lại của SSD**, nhiệt độ.
+3. Xem log Windows 90 ngày gần nhất có báo bad block, phải đọc lại hay ổ bị reset không.
+4. **Đọc thử bề mặt ổ**: đo tốc độ ở đầu/giữa/cuối ổ, rồi đọc rải rác 400 chỗ khắp ổ để tìm chỗ đọc lỗi hoặc đọc chậm (dấu hiệu sắp có bad sector).
+5. **Ghi rồi đọc lại** file tạm, so từng byte, đo luôn tốc độ ghi/đọc thật.
+
+| Thấy gì | Nghĩa là |
+|---|---|
+| `SMART BAO O SAP HONG`, `Current Pending`, `Offline Uncorrectable`, `DOC LOI ... (bad sector)` | Ổ đang hỏng, **bỏ** |
+| `SAI DU LIEU` khi ghi rồi đọc lại | Ổ, cáp hoặc RAM có lỗi, **bỏ** (hoặc thử lại bằng cáp khác) |
+| `Reallocated` vài sector | Ổ từng có sector hỏng và đã thay thế. Còn dùng được nhưng nên bớt giá, đừng để dữ liệu quan trọng |
+| `SSD con xx% tuoi tho` | Dưới 30% là nên bớt giá, dưới 10% thì bỏ |
+| `Da chay ... gio` | HDD trên 35.000 giờ (khoảng 4 năm bật liên tục) là đã chạy nhiều |
+| `UDMA CRC` | Thường do dây SATA lỏng hoặc xấu, không hẳn do ổ |
+| `Doc/Ghi cham bat thuong` | HDD đọc dưới 50MB/s, SSD dưới 200MB/s, NVMe dưới 500MB/s là có vấn đề |
+
+Tuỳ chọn: `-DiskNumber 1` chỉ test ổ số 1. `-FullRead` đọc hết bề mặt ổ (HDD 1TB mất khoảng 2 tiếng). `-NoWrite` không ghi file tạm. `-WriteTestGB 4` ghi file tạm 4GB.
+
+Muốn xem SMART đầy đủ hơn thì dùng thêm **CrystalDiskInfo** (crystalmark.info).
+
 ## 5. Dự phòng: USB Ubuntu
 
 Dùng khi máy **không có Windows**, hoặc là **Windows Home** (chỉ thấy 1 CPU).
